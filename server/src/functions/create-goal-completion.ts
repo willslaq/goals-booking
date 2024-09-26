@@ -1,17 +1,15 @@
-import { and, count, eq, gte, lte, sql } from "drizzle-orm";
+import dayjs from "dayjs";
 import { db } from "../db";
 import { goalCompletions, goals } from "../db/schema";
-import dayjs from "dayjs";
+import { and, count, eq, gte, lte, sql } from "drizzle-orm";
 
-interface CreateGoalRequest {
-  title: string;
-  desiredWeeklyFrequency: number;
+interface CreateGoalCompletionRequest {
+  goalId: string;
 }
 
-export async function createGoal({
-  title,
-  desiredWeeklyFrequency,
-}: CreateGoalRequest) {
+export async function createGoalCompletion({
+  goalId,
+}: CreateGoalCompletionRequest) {
   const firstDayOfWeek = dayjs().startOf("week").toDate();
   const lastDayOfWeek = dayjs().endOf("week").toDate();
 
@@ -36,18 +34,18 @@ export async function createGoal({
     .select({
       desiredWeeklyFrequency: goals.desiredWeeklyFrequency,
       completionCount: sql/*sql*/ `
-        COALESCE(${goalCompletionCounts.completionCount}, 0)
-      `.mapWith(Number),
+          COALESCE(${goalCompletionCounts.completionCount}, 0)
+        `.mapWith(Number),
     })
     .from(goals)
     .leftJoin(goalCompletionCounts, eq(goals.id, goalCompletionCounts.goalId));
 
-  // const result = await db
-  //   .insert(goals)
-  //   .values({ title, desiredWeeklyFrequency })
-  //   .returning();
+  //   const result = await db
+  //     .insert(goalCompletions)
+  //     .values({ goalId })
+  //     .returning();
 
-  const goal = result[0];
+  const goalCompletion = result[0];
 
-  return { goal };
+  return { goalCompletion };
 }
