@@ -23,7 +23,8 @@ export async function createGoalCompletion({
       .where(
         and(
           gte(goalCompletions.createdAt, firstDayOfWeek),
-          lte(goalCompletions.createdAt, lastDayOfWeek)
+          lte(goalCompletions.createdAt, lastDayOfWeek),
+          eq(goalCompletions.goalId, goalId)
         )
       )
       .groupBy(goalCompletions.goalId)
@@ -38,14 +39,22 @@ export async function createGoalCompletion({
         `.mapWith(Number),
     })
     .from(goals)
-    .leftJoin(goalCompletionCounts, eq(goals.id, goalCompletionCounts.goalId));
+    .leftJoin(goalCompletionCounts, eq(goals.id, goalCompletionCounts.goalId))
+    .where(eq(goals.id, goalId))
+    .limit(1);
 
-  //   const result = await db
-  //     .insert(goalCompletions)
-  //     .values({ goalId })
-  //     .returning();
+  const { completionCount, desiredWeeklyFrequency } = result[0];
 
-  const goalCompletion = result[0];
+  if (completionCount >= desiredWeeklyFrequency) {
+    throw new Error("Goal already completed this week!");
+  }
+
+  const insertResult = await db
+    .insert(goalCompletions)
+    .values({ goalId })
+    .returning();
+
+  const goalCompletion = insertResult[0];
 
   return { goalCompletion };
 }
