@@ -3,6 +3,15 @@ import { db } from "../db";
 import { goalCompletions, goals } from "../db/schema";
 import dayjs from "dayjs";
 
+type GoalsPerDay = Record<
+  string,
+  {
+    id: string;
+    title: string;
+    createdAt: Date;
+  }[]
+>;
+
 export async function getWeekSummary() {
   const firstDayOfWeek = dayjs().startOf("week").toDate();
   const lastDayOfWeek = dayjs().endOf("week").toDate();
@@ -68,11 +77,11 @@ export async function getWeekSummary() {
         sql/*sql*/ `(SELECT SUM(${goalsCreatedUpToWeek.desiredWeeklyFrequency}) FROM ${goalsCreatedUpToWeek})`.mapWith(
           Number
         ),
-      goalsPerDay: sql/*sql*/ `JSON_OBJECT_AGG(${goalsCompletedByWeekDay.completedAtDate}, ${goalsCompletedByWeekDay.completions})`,
+      goalsPerDay: sql/*sql*/ <GoalsPerDay>`JSON_OBJECT_AGG(${goalsCompletedByWeekDay.completedAtDate}, ${goalsCompletedByWeekDay.completions})`,
     })
     .from(goalsCompletedByWeekDay);
 
   return {
-    summary: result,
+    summary: result[0],
   };
 }
